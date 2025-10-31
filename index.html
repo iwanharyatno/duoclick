@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Cerdas Cermat Stopwatch</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #111;
+            color: #fff;
+            display: flex;
+            height: 100vh;
+        }
+
+        .stopwatch {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 3rem;
+            border: 3px solid #333;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .highlight {
+            background: #1cc88a;
+            color: #111;
+        }
+
+        .label {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #ccc;
+        }
+
+        .reset-hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #888;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="stopwatch" id="left">
+        <div class="label">Tekan "Left Ctrl"</div>
+        <div class="time" id="timeLeft">0.000</div>
+    </div>
+    <div class="stopwatch" id="right">
+        <div class="label">Tekan "→ (Right Arrow)"</div>
+        <div class="time" id="timeRight">0.000</div>
+    </div>
+
+    <div class="reset-hint">Tekan [Space] atau [R] untuk reset ronde</div>
+
+    <script>
+        let startTime;
+        let leftStopped, rightStopped;
+        let leftTime, rightTime;
+        let running = false;
+        let winnerDeclared = false;
+
+        const leftBox = document.getElementById("left");
+        const rightBox = document.getElementById("right");
+        const timeLeftEl = document.getElementById("timeLeft");
+        const timeRightEl = document.getElementById("timeRight");
+
+        function start() {
+            startTime = performance.now();
+            leftStopped = false;
+            rightStopped = false;
+            leftTime = 0;
+            rightTime = 0;
+            running = true;
+            winnerDeclared = false;
+
+            leftBox.classList.remove("highlight");
+            rightBox.classList.remove("highlight");
+            leftBox.style.background = "";
+            rightBox.style.background = "";
+
+            update();
+        }
+
+        function update() {
+            if (!running) return;
+            const now = performance.now();
+            if (!leftStopped) leftTime = (now - startTime) / 1000;
+            if (!rightStopped) rightTime = (now - startTime) / 1000;
+            timeLeftEl.textContent = leftTime.toFixed(3);
+            timeRightEl.textContent = rightTime.toFixed(3);
+            if (!leftStopped || !rightStopped) {
+                requestAnimationFrame(update);
+            }
+        }
+
+        function declareWinner(side) {
+            if (winnerDeclared) return;
+            winnerDeclared = true;
+
+            if (side === "left") {
+                leftBox.classList.add("highlight");
+            } else {
+                rightBox.classList.add("highlight");
+            }
+        }
+
+        async function handleReset() {
+            // kalau belum fullscreen, masuk fullscreen dulu
+            if (!document.fullscreenElement) {
+                try {
+                    await document.documentElement.requestFullscreen();
+                } catch (err) {
+                    console.warn("Gagal masuk fullscreen:", err);
+                }
+            }
+            // mulai ronde baru
+            start();
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (!running && e.code !== "Space" && e.code !== "KeyR") return;
+
+            if (e.code === "ControlLeft" && !leftStopped) {
+                leftStopped = true;
+                declareWinner("left");
+            }
+
+            if (e.code === "ArrowRight" && !rightStopped) {
+                rightStopped = true;
+                declareWinner("right");
+            }
+
+            if (e.code === "Space" || e.code === "KeyR") {
+                e.preventDefault();
+                handleReset();
+            }
+        });
+    </script>
+</body>
+
+</html>
