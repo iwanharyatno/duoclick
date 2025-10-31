@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kuis Cerdas Cermat Stopwatch</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -38,7 +35,7 @@
         .label {
             font-size: 1.2rem;
             margin-bottom: 1rem;
-            color: #ccc;
+            color: #888;
         }
 
         .reset-hint {
@@ -52,7 +49,6 @@
         }
     </style>
 </head>
-
 <body>
     <div class="stopwatch" id="left">
         <div class="label">Tekan "Left Ctrl"</div>
@@ -66,6 +62,9 @@
     <div class="reset-hint">Tekan [Space] atau [R] untuk reset ronde</div>
 
     <script>
+        // --- variabel presisi waktu (ubah nilainya untuk menentukan banyaknya angka di belakang koma) ---
+        const precision = 4;
+
         let startTime;
         let leftStopped, rightStopped;
         let leftTime, rightTime;
@@ -101,10 +100,14 @@
             const now = performance.now();
             if (!leftStopped) leftTime = (now - startTime) / 1000;
             if (!rightStopped) rightTime = (now - startTime) / 1000;
-            timeLeftEl.textContent = leftTime.toFixed(4);
-            timeRightEl.textContent = rightTime.toFixed(4);
+            
+            timeLeftEl.textContent = leftTime.toFixed(precision);
+            timeRightEl.textContent = rightTime.toFixed(precision);
+
             if (!leftStopped || !rightStopped) {
                 requestAnimationFrame(update);
+            } else {
+                declareWinner();
             }
         }
 
@@ -114,8 +117,7 @@
 
             const diff = Math.abs(leftTime - rightTime);
 
-            if (diff <= 0.0005) {
-                // seri — highlight kuning
+            if (diff <= Math.pow(10, -precision)) {
                 leftBox.style.background = "#f6c23e";
                 rightBox.style.background = "#f6c23e";
                 leftBox.style.color = "#111";
@@ -123,6 +125,14 @@
             } else if (leftTime < rightTime) {
                 leftBox.classList.add("highlight");
             } else {
+                rightBox.classList.add("highlight");
+            }
+        }
+
+        function highlightTemporary(who) {
+            if (who === "left") {
+                leftBox.classList.add("highlight");
+            } else if (who === "right") {
                 rightBox.classList.add("highlight");
             }
         }
@@ -143,22 +153,12 @@
 
             if (e.code === "ControlLeft" && !leftStopped) {
                 leftStopped = true;
+                if (!rightStopped) highlightTemporary("left");
             }
 
             if (e.code === "ArrowRight" && !rightStopped) {
                 rightStopped = true;
-            }
-
-            if (leftStopped && rightStopped && running) {
-                running = false;
-                declareWinner();
-            } else if ((leftStopped || rightStopped) && !winnerDeclared && !(!leftStopped && !rightStopped)) {
-                setTimeout(() => {
-                    if (!winnerDeclared) {
-                        running = false;
-                        declareWinner();
-                    }
-                }, 50);
+                if (!leftStopped) highlightTemporary("right");
             }
 
             if (e.code === "Space" || e.code === "KeyR") {
@@ -167,7 +167,5 @@
             }
         });
     </script>
-
 </body>
-
 </html>
