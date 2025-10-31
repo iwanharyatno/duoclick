@@ -56,11 +56,11 @@
 <body>
     <div class="stopwatch" id="left">
         <div class="label">Tekan "Left Ctrl"</div>
-        <div class="time" id="timeLeft">0.000</div>
+        <div class="time" id="timeLeft">0.0000</div>
     </div>
     <div class="stopwatch" id="right">
         <div class="label">Tekan "→ (Right Arrow)"</div>
-        <div class="time" id="timeRight">0.000</div>
+        <div class="time" id="timeRight">0.0000</div>
     </div>
 
     <div class="reset-hint">Tekan [Space] atau [R] untuk reset ronde</div>
@@ -90,6 +90,8 @@
             rightBox.classList.remove("highlight");
             leftBox.style.background = "";
             rightBox.style.background = "";
+            leftBox.style.color = "";
+            rightBox.style.color = "";
 
             update();
         }
@@ -99,18 +101,26 @@
             const now = performance.now();
             if (!leftStopped) leftTime = (now - startTime) / 1000;
             if (!rightStopped) rightTime = (now - startTime) / 1000;
-            timeLeftEl.textContent = leftTime.toFixed(3);
-            timeRightEl.textContent = rightTime.toFixed(3);
+            timeLeftEl.textContent = leftTime.toFixed(4);
+            timeRightEl.textContent = rightTime.toFixed(4);
             if (!leftStopped || !rightStopped) {
                 requestAnimationFrame(update);
             }
         }
 
-        function declareWinner(side) {
+        function declareWinner() {
             if (winnerDeclared) return;
             winnerDeclared = true;
 
-            if (side === "left") {
+            const diff = Math.abs(leftTime - rightTime);
+
+            if (diff <= 0.0005) {
+                // seri — highlight kuning
+                leftBox.style.background = "#f6c23e";
+                rightBox.style.background = "#f6c23e";
+                leftBox.style.color = "#111";
+                rightBox.style.color = "#111";
+            } else if (leftTime < rightTime) {
                 leftBox.classList.add("highlight");
             } else {
                 rightBox.classList.add("highlight");
@@ -118,7 +128,6 @@
         }
 
         async function handleReset() {
-            // kalau belum fullscreen, masuk fullscreen dulu
             if (!document.fullscreenElement) {
                 try {
                     await document.documentElement.requestFullscreen();
@@ -126,7 +135,6 @@
                     console.warn("Gagal masuk fullscreen:", err);
                 }
             }
-            // mulai ronde baru
             start();
         }
 
@@ -135,12 +143,22 @@
 
             if (e.code === "ControlLeft" && !leftStopped) {
                 leftStopped = true;
-                declareWinner("left");
             }
 
             if (e.code === "ArrowRight" && !rightStopped) {
                 rightStopped = true;
-                declareWinner("right");
+            }
+
+            if (leftStopped && rightStopped && running) {
+                running = false;
+                declareWinner();
+            } else if ((leftStopped || rightStopped) && !winnerDeclared && !(!leftStopped && !rightStopped)) {
+                setTimeout(() => {
+                    if (!winnerDeclared) {
+                        running = false;
+                        declareWinner();
+                    }
+                }, 50);
             }
 
             if (e.code === "Space" || e.code === "KeyR") {
@@ -149,6 +167,7 @@
             }
         });
     </script>
+
 </body>
 
 </html>
